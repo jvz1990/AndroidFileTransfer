@@ -4,6 +4,7 @@ import com.johanvz.Components.Device;
 import com.johanvz.GUI.DeviceCellRenderer;
 import com.johanvz.GUI.FileCellRenderer;
 import com.johanvz.GUI.ListTransferHandler;
+import com.johanvz.SEC.ECDH;
 import com.johanvz.TCP.Master;
 import com.johanvz.TCP.Sender;
 import com.johanvz.UDP.Broadcaster;
@@ -201,6 +202,7 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
                         }
                     }
                     devices.addElement(new Device(packet.getMachineName(), packet.getTCPport(), packet.getPublicKey(), packet.getInetAddress()));
+                    ECDH.addPublicKey(packet.getPublicKey(), packet.getInetAddress());
                 }
 
             }

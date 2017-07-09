@@ -14,7 +14,7 @@ import java.net.UnknownHostException;
 /**
  * Created by j on 3/07/2017.
  */
-public class Master implements Runnable {
+public final class Master implements Runnable {
 
     private static int portNo;
     private static boolean initialzed = false;

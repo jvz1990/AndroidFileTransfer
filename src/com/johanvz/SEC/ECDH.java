@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Created by j on 3/07/2017.
  */
-public class ECDH {
+public final class ECDH {
 
     private static boolean initialized = false;
 
@@ -22,7 +22,7 @@ public class ECDH {
     private static byte[] publicKey;
 
     private static KeyFactory keyFactory;
-    private static Hashtable sharedKeys;
+    private static Hashtable<InetAddress, byte[]> sharedKeys;
 
 
     private ECDH() {
@@ -30,14 +30,12 @@ public class ECDH {
     }
 
     private static synchronized void initialize() {
-        sharedKeys = new Hashtable();
+        sharedKeys = new Hashtable<>();
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
             keyPairGenerator.initialize(256);
             keyPair = keyPairGenerator.generateKeyPair();
             publicKey = keyPair.getPublic().getEncoded();
-
-            //System.out.println(printHexBinary(publicKey));
 
             keyFactory = KeyFactory.getInstance("EC");
             initialized = true;
@@ -45,6 +43,10 @@ public class ECDH {
             e.printStackTrace();
             initialized = false;
         }
+    }
+
+    public static synchronized void removePublicKey(InetAddress key) {
+        sharedKeys.remove(key);
     }
 
     public static synchronized void addPublicKey(byte[] otherKey, InetAddress IPAddress) {
@@ -68,6 +70,7 @@ public class ECDH {
             messageDigest.update(keys.get(1));
 
             sharedKeys.put(IPAddress, messageDigest.digest());
+            //System.out.println(DatatypeConverter.printHexBinary(sharedKeys.get(IPAddress)));
         } catch (InvalidKeySpecException | NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
         }
