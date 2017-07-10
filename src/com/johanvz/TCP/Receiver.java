@@ -1,10 +1,15 @@
 package com.johanvz.TCP;
 
 import com.johanvz.Main;
+import com.johanvz.SEC.AES;
+import com.johanvz.SEC.ECDH;
 import com.johanvz.Utils.Consts;
 import com.johanvz.Utils.PlatformUtils;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -29,18 +34,21 @@ public class Receiver implements Runnable {
     @Override
     public void run() {
 
+
+
         try {
             Socket socket = null;
             InputStream inputStream = null;
-            DataInputStream dataInputStream = null;
+            //DataInputStream dataInputStream = null;
             FileOutputStream fileOutputStream = null;
+            CipherInputStream cipherInputStream = null;
             byte[] buffer = new byte[Consts.PACKET_SIZE];
             int bytesRead, current = 0, remaining;
 
             socket = serverSocket.accept();
             inputStream = socket.getInputStream();
 
-            dataInputStream = new DataInputStream(inputStream);
+            //dataInputStream = new DataInputStream(inputStream);
 
             if(PlatformUtils.isWindows()) {
                 fileOutputStream = new FileOutputStream(Main.FilePath.concat("\\").concat(fileName));
@@ -48,9 +56,23 @@ public class Receiver implements Runnable {
                 fileOutputStream = new FileOutputStream(Main.FilePath.concat("/").concat(fileName));
             }
 
+            AES decryptor = new AES(
+                    ECDH.getSharedKeys().get(socket.getInetAddress()),
+                    Cipher.DECRYPT_MODE
+            );
+
+            cipherInputStream = new CipherInputStream(inputStream, decryptor.getCipher());
+
+            /*remaining = fileSize;
+            while ((bytesRead = dataInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+                current += bytesRead;
+                remaining -= bytesRead;
+                fileOutputStream.write(buffer, 0, bytesRead);
+                System.out.println("Total read = " + current + " percent = " + ((current / (double) fileSize) * 100.0) + "%");
+            }*/
 
             remaining = fileSize;
-            while ((bytesRead = dataInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+            while ((bytesRead = cipherInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
                 current += bytesRead;
                 remaining -= bytesRead;
                 fileOutputStream.write(buffer, 0, bytesRead);
@@ -59,7 +81,8 @@ public class Receiver implements Runnable {
 
             fileOutputStream.close();
 
-            dataInputStream.close();
+            //dataInputStream.close();
+            cipherInputStream.close();
             inputStream.close();
             socket.close();
 

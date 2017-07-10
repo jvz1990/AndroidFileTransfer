@@ -12,7 +12,7 @@ import static javax.xml.bind.DatatypeConverter.printHexBinary;
  * Created by j on 3/07/2017.
  * Please note this will only work with key length of 64 bytes (from ECDH class)
  */
-public class AES {
+public final class AES {
 
     // AES-GCM parameters
     private static final int GCM_NONCE_LENGTH = 12; // in bytes
@@ -20,10 +20,10 @@ public class AES {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final String SEC_PROVIDER = "SunJCE";
 
-    //Cipher machines
-    private Cipher encryptor, decryptor;
+    //Cipher machine
+    private Cipher cipher;
 
-    public AES(byte[] key) {
+    public AES(byte[] key, int cipherMode) {
         try {
             Key secretKey = generateKey(key);
             final byte[] nonce = provideNonce(key);
@@ -31,26 +31,25 @@ public class AES {
 
             GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
 
-            encryptor = Cipher.getInstance(ALGORITHM, SEC_PROVIDER);
-            decryptor = Cipher.getInstance(ALGORITHM, SEC_PROVIDER);
+            cipher = Cipher.getInstance(ALGORITHM, SEC_PROVIDER);
+            if(cipherMode == Cipher.ENCRYPT_MODE) {
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey, spec);
+            } else if(cipherMode == Cipher.DECRYPT_MODE) {
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+            } else {
+                System.err.println("Cipher mode not allowed");
+            }
 
-            encryptor.init(Cipher.ENCRYPT_MODE, secretKey, spec);
-            encryptor.updateAAD(aad);
-
-            decryptor.init(Cipher.DECRYPT_MODE, secretKey, spec);
-            decryptor.updateAAD(aad);
+            cipher.updateAAD(aad);
 
         } catch (NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidAlgorithmParameterException | InvalidKeyException e) {
             e.printStackTrace();
         }
     }
 
-    public byte[] encrypt(byte[] message) throws BadPaddingException, IllegalBlockSizeException {
-        return encryptor.doFinal(message);
-    }
-
-    public byte[] decrypt(byte[] message) throws BadPaddingException, IllegalBlockSizeException {
-        return decryptor.doFinal(message);
+    // Encrypt or decrypt
+    public byte[] process(byte[] message) throws BadPaddingException, IllegalBlockSizeException {
+        return cipher.doFinal(message);
     }
 
     private static byte[] provideNonce(byte[] key) {
@@ -65,17 +64,22 @@ public class AES {
         return new SecretKeySpec(Arrays.copyOf(key, 16), "AES");
     }
 
+    public Cipher getCipher() {
+        return cipher;
+    }
+
     public static void main(String[] args) throws Exception {
 
         // Sample ECDH key
         String testKey = "CF6C722355EF1C6821A5A110BFB4F2E5F8A26E86AD944ABE63A1067997D6C04B";
-        byte[] bTestKey = testKey.getBytes();
+        byte[] sharedKey = testKey.getBytes();
 
-        AES aes = new AES(bTestKey);
-        byte[] ciphered = aes.encrypt("I like bananas".getBytes());
+        AES encryptor = new AES(sharedKey, Cipher.ENCRYPT_MODE);
+        byte[] ciphered = encryptor.process("I like bananas".getBytes());
         System.out.println(printHexBinary(ciphered));
 
-        byte[] deciphered = aes.decrypt(ciphered);
+        AES decryptor = new AES(sharedKey, Cipher.DECRYPT_MODE);
+        byte[] deciphered = decryptor.process(ciphered);
         System.out.println(new String(deciphered));
 
 

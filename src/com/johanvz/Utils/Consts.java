@@ -10,5 +10,5 @@ public interface Consts {
     int TIME_OUT = 2000; //ms
     int UDP_PORT = 18641;
     int POLL_TIME = 1000; //Broadcast packet period
-    int PACKET_SIZE = 1492; //730 buf
+    int PACKET_SIZE = 1500; //730 buf
 }

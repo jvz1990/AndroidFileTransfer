@@ -110,20 +110,12 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        System.out.println("Reached -1");
-        System.out.println(e.getSource().getClass().toString());
         if (e.getSource() == clearAll) {
-            for (int i = 0; i < listModel.getSize(); i++) {
-                System.out.println(listModel.getElementAt(i).toString());
-            }
             listModel.clear();
         } else if (e.getSource() == sendFiles) {
-            System.out.println("Reached 0");
             if (!deviceList.isSelectionEmpty()) {
-                System.out.println("Reached 1");
                 Device device = devices.get(deviceList.getSelectedIndex());
                 for (int i = 0; i < listModel.getSize(); i++) {
-                    System.out.println("Reached 2");
                     new Sender(listModel.getElementAt(i).toString(), device);
                 }
             }
@@ -153,7 +145,7 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
             e.printStackTrace();
         }
 
-        JFrame jFrame = new JFrame("Android File Transfer");
+        JFrame jFrame = new JFrame("File Transfer");
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         new MainHolder();
         jFrame.add(Main.getInstance());

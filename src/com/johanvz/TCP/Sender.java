@@ -1,11 +1,17 @@
 package com.johanvz.TCP;
 
 import com.johanvz.Components.Device;
+import com.johanvz.SEC.AES;
+import com.johanvz.SEC.ECDH;
 import com.johanvz.Utils.Consts;
 import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
 
+import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Set;
 
 /**
  * Created by j on 30/06/2017.
@@ -25,13 +31,12 @@ public class Sender implements Runnable {
         this.fileToSend = fileToSend;
         this.device = device;
         new Thread(this).start();
-        System.out.println("Sender initialised");
     }
 
     @Override
     public void run() {
 
-        System.out.println("Sender running");
+        AES encryptor = new AES(ECDH.getSharedKeys().get(device.getInetAddress()), Cipher.ENCRYPT_MODE);
 
         packet = new Packet();
         try {
@@ -55,16 +60,23 @@ public class Sender implements Runnable {
             initialSocket.close();
             initialSocket = null;
 
-            DataOutputStream dataOutputStream = new DataOutputStream(transferSocket.getOutputStream());
+            //DataOutputStream dataOutputStream = new DataOutputStream(transferSocket.getOutputStream());
             byte[] buffer = new byte[Consts.PACKET_SIZE];
 
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(transferSocket.getOutputStream(), encryptor.getCipher());
+
             while(fileInputStream.read(buffer) > 0) {
-                dataOutputStream.write(buffer);
+                cipherOutputStream.write(buffer);
+                //cipherOutputStream.flush();
+                //dataOutputStream.write(buffer);
             }
 
-            dataOutputStream.flush();
+            cipherOutputStream.flush();
+            cipherOutputStream.close();
+            cipherOutputStream = null;
+            /*dataOutputStream.flush();
             dataOutputStream.close();
-            dataOutputStream = null;
+            dataOutputStream = null;*/
 
             transferSocket.close();
             transferSocket = null;

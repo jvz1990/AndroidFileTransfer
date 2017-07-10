@@ -95,6 +95,10 @@ public final class ECDH {
         }
     }
 
+    public static Hashtable<InetAddress, byte[]> getSharedKeys() {
+        return sharedKeys;
+    }
+
     public static void main(String[] args) {
         new ECDHHolder();
     }
