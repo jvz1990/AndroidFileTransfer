@@ -1,0 +1,16 @@
+#dropZone {
+    -fx-border-width: 3px;
+    -fx-border-style: dashed;
+    -fx-border-color: RGB(204, 204, 204);
+}
+
+#lblDropFile {
+    -fx-font-size: +300%;
+    -fx-font-weight: bolder;
+    -webkit-webkit-fx-text-fill: RGB(53, 122, 143);
+    -moz-webkit-fx-text-fill: RGB(53, 122, 143);
+    -ms-webkit-fx-text-fill: RGB(53, 122, 143);
+    -o-webkit-fx-text-fill: RGB(53, 122, 143);
+    -khtml-webkit-fx-text-fill: RGB(53, 122, 143);
+    webkit-fx-text-fill: RGB(53, 122, 143);
+}

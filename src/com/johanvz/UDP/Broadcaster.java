@@ -4,6 +4,7 @@ import com.johanvz.SEC.ECDH;
 import com.johanvz.TCP.Master;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.*;
 import java.util.Enumeration;
@@ -54,21 +55,19 @@ public class Broadcaster implements Runnable {
                     initSocket();
                 }
 
-                byte[] rawPacket = new byte[4];
-
-                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+                byte[] rawPacket = updatePacket();
                 DatagramPacket datagramPacket = new DatagramPacket(rawPacket, rawPacket.length, SUBNET_255, UDP_PORT);
                 Packet packet = new Packet(Master.getHostname(), Master.getPortNo(), ECDH.getPublicKey());
 
-                objectOutputStream.writeObject(packet);
-                objectOutputStream.flush();
-                byteArrayOutputStream.flush();
-
-                rawPacket = byteArrayOutputStream.toByteArray();
                 datagramPacket.setData(rawPacket);
 
                 while (keepAlive) {
+
+                    if(packet.getTCPport() != Master.getPortNo()) {
+                        rawPacket = updatePacket();
+                        packet = new Packet(Master.getHostname(), Master.getPortNo(), ECDH.getPublicKey());
+                        datagramPacket.setData(rawPacket);
+                    }
 
                     datagramPacket.setAddress(SUBNET_255);
 
@@ -103,6 +102,27 @@ public class Broadcaster implements Runnable {
             }
 
 
+        }
+    }
+
+    private byte[] updatePacket() {
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            Packet packet = new Packet(Master.getHostname(), Master.getPortNo(), ECDH.getPublicKey());
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+
+            objectOutputStream.writeObject(packet);
+            objectOutputStream.flush();
+            byteArrayOutputStream.flush();
+
+            byte[] toReturn = byteArrayOutputStream.toByteArray();
+            objectOutputStream.close();
+            byteArrayOutputStream.close();
+
+            return toReturn;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new byte[0];
         }
     }
 

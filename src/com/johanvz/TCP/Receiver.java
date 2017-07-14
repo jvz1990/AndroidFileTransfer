@@ -22,11 +22,14 @@ public class Receiver implements Runnable {
     private ServerSocket serverSocket = null;
     private String fileName;
     private int fileSize;
+    private boolean enabledSec = false;
+
 
     public Receiver(ServerSocket serverSocket, int fileSize, String fileName) {
         this.serverSocket = serverSocket;
         this.fileSize = fileSize;
         this.fileName = fileName;
+        this.enabledSec = Main.enableSec;
 
         new Thread(this).start();
     }
@@ -34,55 +37,54 @@ public class Receiver implements Runnable {
     @Override
     public void run() {
 
-
-
         try {
             Socket socket = null;
             InputStream inputStream = null;
-            //DataInputStream dataInputStream = null;
             FileOutputStream fileOutputStream = null;
-            CipherInputStream cipherInputStream = null;
+
             byte[] buffer = new byte[Consts.PACKET_SIZE];
             int bytesRead, current = 0, remaining;
 
             socket = serverSocket.accept();
             inputStream = socket.getInputStream();
 
-            //dataInputStream = new DataInputStream(inputStream);
-
-            if(PlatformUtils.isWindows()) {
+            if (PlatformUtils.isWindows()) {
                 fileOutputStream = new FileOutputStream(Main.FilePath.concat("\\").concat(fileName));
             } else {
                 fileOutputStream = new FileOutputStream(Main.FilePath.concat("/").concat(fileName));
             }
 
-            AES decryptor = new AES(
-                    ECDH.getSharedKeys().get(socket.getInetAddress()),
-                    Cipher.DECRYPT_MODE
-            );
-
-            cipherInputStream = new CipherInputStream(inputStream, decryptor.getCipher());
-
-            /*remaining = fileSize;
-            while ((bytesRead = dataInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
-                current += bytesRead;
-                remaining -= bytesRead;
-                fileOutputStream.write(buffer, 0, bytesRead);
-                System.out.println("Total read = " + current + " percent = " + ((current / (double) fileSize) * 100.0) + "%");
-            }*/
-
             remaining = fileSize;
-            while ((bytesRead = cipherInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
-                current += bytesRead;
-                remaining -= bytesRead;
-                fileOutputStream.write(buffer, 0, bytesRead);
-                System.out.println("Total read = " + current + " percent = " + ((current / (double) fileSize) * 100.0) + "%");
+
+            if (enabledSec) {
+                CipherInputStream cipherInputStream = null;
+                AES decryptor = new AES(
+                        ECDH.getSharedKeys().get(socket.getInetAddress()),
+                        Cipher.DECRYPT_MODE
+                );
+                cipherInputStream = new CipherInputStream(inputStream, decryptor.getCipher());
+
+                while ((bytesRead = cipherInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+                    current += bytesRead;
+                    remaining -= bytesRead;
+                    fileOutputStream.write(buffer, 0, bytesRead);
+                    System.out.println("Total read = " + current + " percent = " + ((current / (double) fileSize) * 100.0) + "%");
+                }
+                cipherInputStream.close();
+            } else {
+                DataInputStream dataInputStream = new DataInputStream(inputStream);;
+                remaining = fileSize;
+                while ((bytesRead = dataInputStream.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+                    current += bytesRead;
+                    remaining -= bytesRead;
+                    fileOutputStream.write(buffer, 0, bytesRead);
+                    System.out.println("Total read = " + current + " percent = " + ((current / (double) fileSize) * 100.0) + "%");
+                }
+                dataInputStream.close();
             }
 
-            fileOutputStream.close();
 
-            //dataInputStream.close();
-            cipherInputStream.close();
+            fileOutputStream.close();
             inputStream.close();
             socket.close();
 

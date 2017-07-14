@@ -42,4 +42,8 @@ public class Device {
     public void setLastTimeHeardFrom(double lastTimeHeardFrom) {
         this.lastTimeHeardFrom = lastTimeHeardFrom;
     }
+
+    public void setTCPport(int TCPport) {
+        this.TCPport = TCPport;
+    }
 }

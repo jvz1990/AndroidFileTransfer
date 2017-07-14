@@ -1,4 +1,4 @@
-package com.johanvz.GUI;
+package com.johanvz.GUI.Tabs.DeviceList;
 
 import com.johanvz.Components.Device;
 

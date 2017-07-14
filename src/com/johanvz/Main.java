@@ -1,9 +1,10 @@
 package com.johanvz;
 
 import com.johanvz.Components.Device;
-import com.johanvz.GUI.DeviceCellRenderer;
-import com.johanvz.GUI.FileCellRenderer;
-import com.johanvz.GUI.ListTransferHandler;
+import com.johanvz.GUI.*;
+import com.johanvz.GUI.Tabs.DeviceList.DeviceCellRenderer;
+import com.johanvz.GUI.Tabs.DeviceList.Devices;
+import com.johanvz.GUI.Tabs.SEC;
 import com.johanvz.SEC.ECDH;
 import com.johanvz.TCP.Master;
 import com.johanvz.TCP.Sender;
@@ -17,10 +18,9 @@ import com.johanvz.Utils.ProjectPath;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Observable;
 import java.util.Observer;
@@ -33,9 +33,9 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
     private static ArrayDeque<Thread> threadList = new ArrayDeque<>();
     public static String FilePath;
 
-    private static final DefaultListModel<Device> devices = new DefaultListModel<>();
-    private JList deviceList;
-
+    //private static final DefaultListModel<Device> devices = new DefaultListModel<>();
+    //private JList deviceList;
+    public static boolean enableSec = false;
 
     private Main() {
         super(new BorderLayout());
@@ -87,38 +87,26 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
         lhs.setDividerLocation(400);
         lhs.setPreferredSize(new Dimension(480, 650));
 
-
-        // --- tab 2 ----
-        JPanel devicesPanel = new JPanel(new BorderLayout());
-
-        deviceList = new JList<>(devices);
-        deviceList.setCellRenderer(new DeviceCellRenderer());
-        JScrollPane jScrollPane = new JScrollPane(deviceList);
-        devicesPanel.add(jScrollPane, BorderLayout.PAGE_START);
-
-        sendFiles = new JButton("Send to machine");
-        sendFiles.addActionListener(this);
-        devicesPanel.add(sendFiles, BorderLayout.PAGE_END);
-
         JTabbedPane jTabbedPane = new JTabbedPane();
         jTabbedPane.addTab("Files", lhs);
-        jTabbedPane.add("Devices", devicesPanel);
+
+        // --- tab 2 ----
+        jTabbedPane.add("Devices", Devices.getInstance());
+
+        // --- tab 3 ----
+        jTabbedPane.addTab("Settings", SEC.getInstance());
 
         add(jTabbedPane);
-
     }
+
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == clearAll) {
             listModel.clear();
-        } else if (e.getSource() == sendFiles) {
-            if (!deviceList.isSelectionEmpty()) {
-                Device device = devices.get(deviceList.getSelectedIndex());
-                for (int i = 0; i < listModel.getSize(); i++) {
-                    new Sender(listModel.getElementAt(i).toString(), device);
-                }
-            }
+        } else {
+            System.out.println(e.getSource().toString());
         }
     }
 
@@ -183,22 +171,7 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
 
     @Override
     public void update(Observable o, Object arg) {
-        if (o instanceof Listener) {
-            if (arg instanceof Packet) {
-                Packet packet = (Packet) arg;
-                synchronized (devices) {
-                    for (int i = 0; i < devices.size(); i++) {
-                        if (devices.get(i).getInetAddress().equals(packet.getInetAddress())) {
-                            devices.get(i).setLastTimeHeardFrom(System.currentTimeMillis());
-                            return;
-                        }
-                    }
-                    devices.addElement(new Device(packet.getMachineName(), packet.getTCPport(), packet.getPublicKey(), packet.getInetAddress()));
-                    ECDH.addPublicKey(packet.getPublicKey(), packet.getInetAddress());
-                }
 
-            }
-        }
     }
 
     public static void main(String[] args) {
@@ -213,15 +186,14 @@ public final class Main extends JPanel implements ActionListener, Observer, Runn
     public void run() {
         while (true) {
             try {
-                synchronized (devices) {
+                Thread.sleep(Consts.POLL_TIME * 2 + Consts.random.nextInt(Consts.POLL_TIME * 4));
+/*                synchronized (devices) {
                     for (int i = 0; i < devices.size(); i++) {
                         if (devices.get(i).getLastTimeHeardFrom() + (Consts.POLL_TIME * 4) < System.currentTimeMillis()) {
                             devices.remove(i);
                         }
                     }
-                }
-
-                Thread.sleep(Consts.POLL_TIME * 4);
+                }*/
             } catch (InterruptedException e) {
                 //e.printStackTrace();
             }

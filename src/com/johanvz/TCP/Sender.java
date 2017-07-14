@@ -1,89 +1,87 @@
 package com.johanvz.TCP;
 
 import com.johanvz.Components.Device;
+import com.johanvz.Main;
 import com.johanvz.SEC.AES;
 import com.johanvz.SEC.ECDH;
 import com.johanvz.Utils.Consts;
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherOutputStream;
 import java.io.*;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Set;
 
 /**
  * Created by j on 30/06/2017.
+ * Class to send a file to device.
  */
 public class Sender implements Runnable {
 
-    private Socket initialSocket, transferSocket;
     private String fileToSend;
-    private int port;
     private Device device;
     private ObjectOutputStream objectOutputStream;
     private ObjectInputStream objectInputStream;
-    private FileInputStream fileInputStream;
     private Packet packet;
+    private boolean enabledSec = false;
+    private String folderStructure = "";
 
-    public Sender(String fileToSend, Device device) {
+    public Sender(String fileToSend, Device device, String parentDirectory) {
         this.fileToSend = fileToSend;
         this.device = device;
+        this.enabledSec = Main.enableSec;
+        this.folderStructure = parentDirectory;
         new Thread(this).start();
     }
 
     @Override
     public void run() {
-
-        AES encryptor = new AES(ECDH.getSharedKeys().get(device.getInetAddress()), Cipher.ENCRYPT_MODE);
-
         packet = new Packet();
         try {
-            fileInputStream = new FileInputStream(fileToSend);
+            FileInputStream fileInputStream = new FileInputStream(fileToSend);
             packet.setFileSize((int) fileInputStream.getChannel().size());
-            packet.setFileName((new File(fileToSend)).getName());
+            if(folderStructure.length() > 0) {
+                packet.setFileName(folderStructure.concat("\\").concat(new File(fileToSend).getName()));
+            } else {
+                packet.setFileName((new File(fileToSend)).getName());
+            }
             packet.setReady(false);
             packet.setPortNo(0);
 
-            initialSocket = new Socket(device.getInetAddress(), device.getTCPport());
+            Socket initialSocket = new Socket(device.getInetAddress(), device.getTCPport());
             objectOutputStream = new ObjectOutputStream(initialSocket.getOutputStream());
             objectInputStream = new ObjectInputStream(initialSocket.getInputStream());
 
-            System.out.println("Send initial packet");
 
-            transferSocket = getTransferSocket();
+            Socket transferSocket = getTransferSocket();
             objectInputStream.close();
             objectInputStream = null;
             objectOutputStream.close();
             objectOutputStream = null;
             initialSocket.close();
-            initialSocket = null;
 
-            //DataOutputStream dataOutputStream = new DataOutputStream(transferSocket.getOutputStream());
             byte[] buffer = new byte[Consts.PACKET_SIZE];
 
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(transferSocket.getOutputStream(), encryptor.getCipher());
-
-            while(fileInputStream.read(buffer) > 0) {
-                cipherOutputStream.write(buffer);
-                //cipherOutputStream.flush();
-                //dataOutputStream.write(buffer);
+            if (enabledSec) {
+                AES encryptor = new AES(ECDH.getSharedKeys().get(device.getInetAddress()), Cipher.ENCRYPT_MODE);
+                CipherOutputStream cipherOutputStream = new CipherOutputStream(transferSocket.getOutputStream(), encryptor.getCipher());
+                while (fileInputStream.read(buffer) > 0) {
+                    cipherOutputStream.write(buffer);
+                }
+                cipherOutputStream.flush();
+                cipherOutputStream.close();
+            } else {
+                DataOutputStream dataOutputStream = new DataOutputStream(transferSocket.getOutputStream());
+                while (fileInputStream.read(buffer) > 0) {
+                    dataOutputStream.write(buffer);
+                }
+                dataOutputStream.flush();
+                dataOutputStream.close();
             }
 
-            cipherOutputStream.flush();
-            cipherOutputStream.close();
-            cipherOutputStream = null;
-            /*dataOutputStream.flush();
-            dataOutputStream.close();
-            dataOutputStream = null;*/
-
             transferSocket.close();
-            transferSocket = null;
 
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Major error");
         }
 
     }
@@ -99,7 +97,7 @@ public class Sender implements Runnable {
             e.printStackTrace();
         }
 
-        while(socket == null) {
+        while (socket == null) {
             try {
                 o = objectInputStream.readObject();
                 packet = (Packet) o;

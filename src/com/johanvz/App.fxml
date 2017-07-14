@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.Pane?>
+<?import com.jfoenix.controls.*?>
+
+<?import javafx.scene.control.Label?>
+<Pane minHeight="480" minWidth="600" stylesheets="@styleSheet.css" xmlns="http://javafx.com/javafx/8.0.112"
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.johanvz.Controller">
+    <children>
+        <MenuBar fx:id="menuBar">
+            <menus>
+                <Menu mnemonicParsing="false" text="File">
+                    <items>
+                        <MenuItem fx:id="menuClose" mnemonicParsing="false" onAction="#menuEvent" text="Close"/>
+                        <MenuItem mnemonicParsing="false" text="Settings"/>
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+        <TabPane fx:id="tabPane" layoutY="25.0" prefHeight="455.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab text="Files">
+                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="400.0" prefWidth="600.0">
+                        <BorderPane prefHeight="200.0" prefWidth="200.0"
+                                    BorderPane.alignment="CENTER" AnchorPane.bottomAnchor="+5.0"
+                                    AnchorPane.topAnchor="+5.0" AnchorPane.leftAnchor="+5.0"
+                                    AnchorPane.rightAnchor="+20.0">
+                            <center>
+                                <Pane fx:id="dropZone" prefHeight="200.0" prefWidth="200.0">
+                                    <Label fx:id="lblDropFile" text="Drop Files in Here"/>
+                                </Pane>
+                            </center>
+                        </BorderPane>
+                    </AnchorPane>
+                </Tab>
+                <Tab text="Devices">
+                    <content>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0"/>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </children>
+</Pane>
